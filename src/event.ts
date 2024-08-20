@@ -9,6 +9,7 @@ interface GameEventHandler {
   onLeftPlayer?: (id: string) => void;
 
   onErrorTooManyPlayers?: () => void;
+  onErrorRoomIsPlaying?: () => void;
 
   onField?: (data: Field) => void;
   onFieldDiffs?: (diffs: FieldDiff[]) => void;
@@ -97,6 +98,10 @@ export class GameSocket {
 
     this.socket.on('error_too_many_players', () => {
       this.handlers.forEach((h) => h.onErrorTooManyPlayers?.());
+    });
+
+    this.socket.on('error_room_is_playing', () => {
+      this.handlers.forEach((h) => h.onErrorRoomIsPlaying?.());
     });
   }
 

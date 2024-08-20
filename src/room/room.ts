@@ -49,7 +49,10 @@ export class Room implements EngineContext {
         this.updateComponentPlayers();
       },
       onErrorTooManyPlayers: () => {
-        this.component!.errorMessage = 'Too many players';
+        this.component!.errorMessage = 'There are too many players';
+      },
+      onErrorRoomIsPlaying: () => {
+        this.component!.errorMessage = 'This room is playing';
       },
       onField: (_) => {
         // To handle start. the data will be handled in Game
