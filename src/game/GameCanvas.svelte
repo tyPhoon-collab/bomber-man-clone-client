@@ -17,7 +17,6 @@
   function backToTitle() {
     const socket = getSocket();
     socket.leave();
-    socket.disconnect(); // temporary
     engine.pop().pop();
   }
 </script>

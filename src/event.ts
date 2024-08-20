@@ -104,10 +104,6 @@ export class GameSocket {
     return this.socket.id;
   }
 
-  disconnect() {
-    this.socket.disconnect();
-  }
-
   addHandler(handler: GameEventHandler) {
     this.handlers.push(handler);
   }
