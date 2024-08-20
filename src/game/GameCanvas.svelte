@@ -25,7 +25,7 @@
   <div class="w-full h-full absolute p-4">
     <div class="flex flex-row gap-2">
       <input
-        id="muteCheck"
+        id="volume"
         type="range"
         min="0"
         max="1"
@@ -33,7 +33,7 @@
         bind:value={volume}
         on:change={checkValues}
       />
-      <label for="muteCheck">Mute</label>
+      <label for="volume">Volume</label>
     </div>
     <p>WASD: Move</p>
     <p>Space: Bomb</p>
