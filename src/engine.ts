@@ -25,7 +25,7 @@ export class Engine {
     this.renderer = renderer;
     this.clock = new THREE.Clock();
 
-    window.addEventListener('resize', this.resize.bind(this));
+    window.addEventListener('resize', () => this.resize(this.current!.camera));
     renderer.setAnimationLoop(this.update.bind(this));
   }
 
@@ -40,8 +40,9 @@ export class Engine {
   push(context: EngineContext) {
     this.current?.deactivate();
     context.activate();
-    this.resize();
+
     this.contexts.push(context);
+    this.resize(this.current!.camera);
 
     return this;
   }
@@ -73,14 +74,11 @@ export class Engine {
     this.renderer.render(this.current.scene, this.current.camera);
   }
 
-  resize() {
+  resize(camera: THREE.PerspectiveCamera) {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-    if (this.current == null) {
-      return;
-    }
-    this.current.camera.aspect = window.innerWidth / window.innerHeight;
-    this.current.camera.updateProjectionMatrix();
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
   }
 }
