@@ -78,11 +78,9 @@ export class Game implements EngineContext {
         for (const [id, data] of this.playerData.entries()) {
           const initIndex = field.config.initialSpawnIndexes[data.index];
           if (id === getSocket().id) {
-            this.player = await this.buildControllablePlayer();
-            this.player.pos.copy(convertIndexToPosition(initIndex));
+            this.player = await this.buildControllablePlayer(initIndex);
           } else {
-            const player = await this.buildPlayer();
-            player.pos.copy(convertIndexToPosition(initIndex));
+            const player = await this.buildPlayer(initIndex);
             this.players.set(id, player);
           }
         }
@@ -217,15 +215,17 @@ export class Game implements EngineContext {
     }
   }
 
-  private async buildControllablePlayer() {
+  private async buildControllablePlayer(initIndex: Index) {
     const object = await newBomberManObject();
+    object.position.copy(convertIndexToPosition(initIndex));
     this.add(object);
 
     return new ControllablePlayer(object, this, this.socket);
   }
 
-  private async buildPlayer() {
+  private async buildPlayer(initIndex: Index) {
     const object = await newBomberManObject();
+    object.position.copy(convertIndexToPosition(initIndex));
     this.add(object);
 
     return new RemotePlayer(object, this);
