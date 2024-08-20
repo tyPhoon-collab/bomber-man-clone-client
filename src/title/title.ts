@@ -1,0 +1,106 @@
+import type { EngineContext } from '../engine';
+
+import * as THREE from 'three';
+import { getTargetDocument } from '../main';
+
+import TitleCanvas from './TitleCanvas.svelte';
+import { loadModel } from '../loader';
+
+export class Title implements EngineContext {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+
+  animationMixers: Map<THREE.Object3D, THREE.AnimationMixer> = new Map();
+
+  private component: TitleCanvas | null = null;
+
+  constructor() {
+    this.scene = new THREE.Scene();
+
+    this.scene.background = new THREE.Color(0xcccccc);
+    this.scene.fog = new THREE.FogExp2(0xcccccc, 0.0015);
+
+    this.camera = new THREE.PerspectiveCamera(
+      45,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    this.camera.position.copy(new THREE.Vector3(0, 300, 500));
+    this.camera.lookAt(new THREE.Vector3(0, 100, 0));
+
+    this.initialize();
+  }
+
+  async initialize() {
+    this.addGround();
+    this.addLights();
+
+    const bomb = await loadModel('bomb2');
+    const animationMixer = new THREE.AnimationMixer(bomb);
+    animationMixer.clipAction(bomb.animations[0]).play();
+    this.animationMixers.set(bomb, animationMixer);
+
+    bomb.position.set(-200, 0, 0);
+    this.scene.add(bomb);
+
+    await this.addBomberMan();
+  }
+
+  private addLights() {
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(0, 500, 0);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.camera.top = 500;
+    directionalLight.shadow.camera.bottom = -500;
+    directionalLight.shadow.camera.left = -500;
+    directionalLight.shadow.camera.right = 500;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 1000;
+    this.scene.add(directionalLight);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    this.scene.add(ambientLight);
+  }
+
+  private addGround() {
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(10000, 10000),
+      new THREE.MeshPhongMaterial({ color: 0xcbcbcb, depthWrite: false })
+    );
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.receiveShadow = true;
+    this.scene.add(mesh);
+  }
+
+  private async addBomberMan() {
+    const bomberMan = await loadModel('player/01-2');
+
+    const animationMixer = new THREE.AnimationMixer(bomberMan);
+    this.animationMixers.set(bomberMan, animationMixer);
+    animationMixer.clipAction(bomberMan.animations[5]).play();
+
+    bomberMan.position.set(200, 0, 0);
+    this.scene.add(bomberMan);
+  }
+
+  update(delta: number) {
+    this.animationMixers.forEach((mixer) => {
+      mixer.update(delta);
+    });
+  }
+
+  activate() {
+    if (this.component !== null) {
+      this.component.visible = true;
+      return;
+    }
+    this.component = new TitleCanvas({
+      target: getTargetDocument(),
+    });
+  }
+
+  deactivate() {
+    this.component!.visible = false;
+  }
+}
