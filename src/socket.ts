@@ -1,7 +1,6 @@
 import { GameSocket } from './event';
 
-const ENDPOINT = 'http://localhost:8000';
-// const ENDPOINT = 'https://bomber-man-pw7szx6oxa-an.a.run.app';
+const ENDPOINT = import.meta.env.VITE_SOCKET_ENDPOINT;
 
 let socket: GameSocket | null = null;
 
