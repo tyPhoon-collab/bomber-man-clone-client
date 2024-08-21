@@ -1,10 +1,9 @@
 import { FieldController } from './controller/field_controller';
 import * as THREE from 'three';
-import { ControllablePlayer, RemotePlayer } from './player';
 import { InputManager } from './input_manager';
 import { GameSocket } from '../event';
-import { newBomberManObject, UNIT } from './obj';
-import { convertDirectionToIndex, convertIndexToPosition } from './convert';
+import { UNIT } from './obj';
+import { convertDirectionToIndex } from './convert';
 import { BombController } from './controller/bomb_controller';
 import { EffectController } from './controller/effect_controller';
 import { SoundController } from './controller/sound_controller';
@@ -19,6 +18,7 @@ import type { EngineContext } from '../engine';
 import { getSocket } from '../socket';
 import GameCanvas from './GameCanvas.svelte';
 import { getTargetDocument } from '../main';
+import { PlayersController } from './controller/players_controller';
 
 export class Game implements EngineContext {
   scene: THREE.Scene;
@@ -29,10 +29,7 @@ export class Game implements EngineContext {
   fieldController: FieldController | null = null;
   effectController: EffectController;
   soundController: SoundController;
-
-  private player: ControllablePlayer | null = null;
-  private players: Map<string, RemotePlayer> = new Map();
-  private playerData: PlayerData[] = [];
+  playersController: PlayersController;
 
   private socket: GameSocket;
   private inputManager: InputManager;
@@ -49,6 +46,7 @@ export class Game implements EngineContext {
     this.bombController = new BombController(this);
     this.effectController = new EffectController(this);
     this.soundController = new SoundController();
+    this.playersController = new PlayersController(this);
 
     this.inputManager = new InputManager();
 
@@ -56,19 +54,13 @@ export class Game implements EngineContext {
 
     this.socket.addHandler({
       onPlayers: (players: PlayerData[]) => {
-        this.playerData = players;
+        this.playersController.setPlayerData(players);
       },
       onJoinedPlayer: (player) => {
-        this.playerData.push(player);
+        this.playersController.joined(player);
       },
       onLeftPlayer: (id) => {
-        this.playerData = this.playerData.filter((p) => p.id !== id);
-
-        const player = this.players.get(id);
-        if (player) {
-          player.dispose();
-          this.players.delete(id);
-        }
+        this.playersController.left(id);
       },
       onField: async (field) => {
         this.dispose();
@@ -76,17 +68,7 @@ export class Game implements EngineContext {
         this.fieldController.build();
         this.camera.position.set((field.config.width * UNIT) / 2, 5000, 100);
 
-        for (const data of this.playerData) {
-          const index = this.playerData.findIndex((p) => p.id === data.id);
-          const initIndex = field.config.initialSpawnIndexes[index];
-          if (data.id === getSocket().id) {
-            this.player = await this.buildControllablePlayer(initIndex);
-          } else {
-            const player = await this.buildPlayer(initIndex);
-            this.players.set(data.id, player);
-          }
-        }
-
+        this.playersController.build(field.config.initialSpawnIndexes);
         this.soundController.playBGM();
       },
       onFieldDiffs: (diffs: FieldDiff[]) => {
@@ -94,23 +76,15 @@ export class Game implements EngineContext {
       },
       onExploded: (bombIds: string[], diffs: FieldDiff[]) => {
         this.bombController.explode(bombIds, diffs);
-        this.player?.setDeadIndexes(diffs.map((diff) => diff.index));
+        const indexes = diffs.map((diff) => diff.index);
+        this.player?.setDeadIndexes(indexes);
       },
-      onBomb: (bomb: Bomb) => {
-        this.bombController.set(bomb);
-      },
-      onPlayerPosition: (id, pos) => {
-        this.players.get(id)?.setTargetPosition(pos);
-      },
-      onPlayerAngle: (id, angle) => {
-        this.players.get(id)?.setAngle(angle);
-      },
-      onPlayerState: (id, state) => {
-        this.players.get(id)?.setState(state);
-      },
-      onSpeedUp: () => {
-        this.player?.speedUp();
-      },
+      onBomb: (bomb: Bomb) => this.bombController.set(bomb),
+      onPlayerPosition: (id, pos) =>
+        this.playersController.setTargetPosition(id, pos),
+      onPlayerAngle: (id, angle) => this.playersController.setAngle(id, angle),
+      onPlayerState: (id, state) => this.playersController.setState(id, state),
+      onSpeedUp: () => this.player?.speedUp(),
       onGotItem: (index: Index) => {
         this.fieldController?.set({
           index,
@@ -147,10 +121,11 @@ export class Game implements EngineContext {
   dispose() {
     this.bombController.dispose();
     this.fieldController?.dispose();
-    this.player?.dispose();
-    for (const player of this.players.values()) {
-      player.dispose();
-    }
+    this.playersController?.dispose();
+  }
+
+  get player() {
+    return this.playersController.player;
   }
 
   add(object: THREE.Object3D) {
@@ -163,26 +138,18 @@ export class Game implements EngineContext {
   }
 
   update(delta: number) {
-    if (this.player == null || this.fieldController == null) return;
-
-    const dir = this.inputManager.getDirection();
-
-    this.player.update(delta);
-    this.player.move(dir);
-
-    for (const player of this.players.values()) {
-      player.update(delta);
-    }
+    if (this.fieldController == null) return;
 
     for (const mixer of this.animationMixers.values()) {
       mixer.update(delta);
     }
 
+    this.playersController.update(delta);
     this.effectController.update(delta);
     this.bombController.update(delta);
 
-    if (this.player.canMove()) {
-      this.handleInput(dir);
+    if (this.player?.canMove()) {
+      this.handleInput();
     }
 
     this.inputManager.postFrame();
@@ -202,8 +169,12 @@ export class Game implements EngineContext {
     this.component!.visible = false;
   }
 
-  private handleInput(dir: THREE.Vector3) {
+  private handleInput() {
     if (this.player == null) return;
+
+    const dir = this.inputManager.getDirection();
+
+    this.player.move(dir);
 
     if (this.inputManager.isPlaceBombPressed()) {
       this.socket.placeBomb(this.player.index);
@@ -219,21 +190,5 @@ export class Game implements EngineContext {
     } else if (this.inputManager.isHoldPressed()) {
       this.socket.holdBomb(this.player.index);
     }
-  }
-
-  private async buildControllablePlayer(initIndex: Index) {
-    const object = await newBomberManObject();
-    object.position.copy(convertIndexToPosition(initIndex));
-    this.add(object);
-
-    return new ControllablePlayer(object, this, this.socket);
-  }
-
-  private async buildPlayer(initIndex: Index) {
-    const object = await newBomberManObject();
-    object.position.copy(convertIndexToPosition(initIndex));
-    this.add(object);
-
-    return new RemotePlayer(object, this);
   }
 }

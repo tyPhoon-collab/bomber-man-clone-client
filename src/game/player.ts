@@ -4,13 +4,9 @@ import { PLAYER_RADIUS, UNIT } from './obj';
 import { Game } from './game';
 import { engine } from '../main';
 import { v4 } from 'uuid';
-import {
-  BombState,
-  equalIndex,
-  type Index,
-  type PlayerData,
-} from '../interface';
+import { BombState, equalIndex, type Index } from '../interface';
 import type { GameSocket } from '../event';
+import { getSocket } from '../socket';
 
 export type PlayerState =
   | 'Idle'
@@ -141,14 +137,12 @@ export class ControllablePlayer extends Player {
   private positionSyncController: SyncController;
   private moveWeight = 5;
   private deadIndexes: Map<string, Index[]> = new Map();
+  private socket: GameSocket;
 
-  constructor(
-    object: THREE.Object3D,
-    game: Game,
-    private socket: GameSocket
-  ) {
+  constructor(object: THREE.Object3D, game: Game) {
     super(object, game);
 
+    this.socket = getSocket();
     this.positionSyncController = new SyncController(() => {
       this.socket.position(this.pos);
     });
