@@ -53,8 +53,10 @@ export class Engine {
     }
 
     this.current!.deactivate();
-    this.contexts.pop()!;
+    this.contexts.pop();
     this.current!.activate();
+
+    this.resize(this.current!.camera);
 
     return this;
   }
