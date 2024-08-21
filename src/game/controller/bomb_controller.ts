@@ -12,6 +12,7 @@ import { Game } from '../game';
 import * as THREE from 'three';
 
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { Sound } from './sound_controller';
 
 export class BombController {
   private bombTemplate: THREE.Object3D | null = null;
@@ -94,7 +95,7 @@ export class BombController {
     this.game.effectController.playExplosion(index);
   }
   private playSound() {
-    this.game.soundController.playExplosion();
+    this.game.soundController.playSound(Sound.Explosion);
   }
 
   private clone() {

@@ -1,13 +1,39 @@
 <!-- TODO checkValues -->
 
 <script lang="ts">
+  import { onDestroy, onMount } from 'svelte';
   import { engine } from '../main';
   import { getSocket } from '../socket';
   import { Game } from './game';
+  import type { GameEventHandler } from '../event';
 
   export let visible = true;
-  export let finished = false;
+
   let volume = 0.5;
+  let finished = false;
+  let winnerName = '';
+
+  const handler: GameEventHandler = {
+    onFinish(winnerId) {
+      finished = true;
+      const game = engine.current as Game;
+      winnerName = game.playersController.getPlayerData(winnerId)?.name ?? '';
+    },
+    onFinishSolo() {
+      finished = true;
+    },
+    onFinishDraw() {
+      finished = true;
+    },
+  };
+
+  onMount(() => {
+    getSocket().addHandler(handler);
+  });
+
+  onDestroy(() => {
+    getSocket().removeHandler(handler);
+  });
 
   export function checkValues() {
     const game = engine.current as Game;
@@ -44,9 +70,12 @@
   </div>
 
   <div
-    class="w-full h-full absolute flex justify-center items-center"
+    class="w-full h-full absolute flex flex-col justify-center items-center gap-2"
     class:hidden={!finished}
   >
+    {#if winnerName !== ''}
+      <p>Winner: {winnerName}</p>
+    {/if}
     <button class="button-primary" on:click={backToTitle}>Back to Title</button>
   </div>
 </div>

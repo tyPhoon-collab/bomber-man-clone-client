@@ -33,6 +33,10 @@ export class PlayersController {
     this.playerData = playerData;
   }
 
+  getPlayerData(id: string) {
+    return this.playerData.find((p) => p.id === id);
+  }
+
   joined(player: PlayerData) {
     this.playerData.push(player);
   }

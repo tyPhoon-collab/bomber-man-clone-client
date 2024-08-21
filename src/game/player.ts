@@ -7,6 +7,7 @@ import { v4 } from 'uuid';
 import { BombState, equalIndex, type Index } from '../interface';
 import type { GameSocket } from '../event';
 import { getSocket } from '../socket';
+import { Sound } from './controller/sound_controller';
 
 export type PlayerState =
   | 'Idle'
@@ -257,7 +258,7 @@ export class ControllablePlayer extends Player {
         if (equalIndex(index, this.index)) {
           this.setState('Dead');
 
-          this.game.soundController.playDead();
+          this.game.soundController.playSound(Sound.Dead);
 
           setTimeout(() => {
             this.setState('Misobon');

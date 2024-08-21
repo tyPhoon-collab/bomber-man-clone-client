@@ -6,7 +6,7 @@ import { UNIT } from './obj';
 import { convertDirectionToIndex } from './convert';
 import { BombController } from './controller/bomb_controller';
 import { EffectController } from './controller/effect_controller';
-import { SoundController } from './controller/sound_controller';
+import { Sound, SoundController } from './controller/sound_controller';
 import {
   type Bomb,
   type FieldDiff,
@@ -90,20 +90,11 @@ export class Game implements EngineContext {
           index,
           type: 0,
         });
-        this.soundController.playGotItem();
+        this.soundController.playSound(Sound.GotItem);
       },
-      onFinish: (winnerId) => {
-        this.soundController.stopBGM();
-        this.component!.finished = true;
-      },
-      onFinishSolo: () => {
-        this.soundController.stopBGM();
-        this.component!.finished = true;
-      },
-      onFinishDraw: () => {
-        this.soundController.stopBGM();
-        this.component!.finished = true;
-      },
+      onFinish: (_) => this.onFinish(),
+      onFinishSolo: () => this.onFinish(),
+      onFinishDraw: () => this.onFinish(),
     });
 
     this.initialize();
@@ -116,6 +107,11 @@ export class Game implements EngineContext {
 
     const listener = await this.soundController.initialize();
     this.camera.add(listener);
+  }
+
+  private onFinish() {
+    this.soundController.stopBGM();
+    this.soundController.playSound(Sound.Finish);
   }
 
   dispose() {

@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { loadAudio } from '../../loader';
 
-const enum Sound {
+export const enum Sound {
   Explosion,
   GotItem,
   Dead,
+  Finish,
 }
 
 export class SoundController {
@@ -40,6 +41,10 @@ export class SoundController {
         Sound.Dead,
         await loadAudio(this.listener!, 'dead').then((x) => x.setVolume(0.3))
       );
+      this.sounds.set(
+        Sound.Finish,
+        await loadAudio(this.listener!, 'finish').then((x) => x.setVolume(0.3))
+      );
 
       this.bgm = await loadAudio(this.listener!, 'BGM').then((x) =>
         x.setLoop(true).setVolume(0.2)
@@ -49,22 +54,9 @@ export class SoundController {
     }
   }
 
-  playExplosion() {
-    const sound = this.sounds.get(Sound.Explosion);
-
-    sound?.stop().play();
-  }
-
-  playGotItem() {
-    const sound = this.sounds.get(Sound.GotItem);
-
-    sound?.stop().play();
-  }
-
-  playDead() {
-    const sound = this.sounds.get(Sound.Dead);
-
-    sound?.stop().play();
+  playSound(sound: Sound) {
+    const s = this.sounds.get(sound);
+    s?.stop().play();
   }
 
   playBGM() {
