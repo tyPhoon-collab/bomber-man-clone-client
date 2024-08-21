@@ -74,7 +74,7 @@
     class:hidden={!finished}
   >
     {#if winnerName !== ''}
-      <p>Winner: {winnerName}</p>
+      <p class="text-2xl font-bold">Winner: {winnerName}</p>
     {/if}
     <button class="button-primary" on:click={backToTitle}>Back to Title</button>
   </div>
