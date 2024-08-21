@@ -5,8 +5,8 @@
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "strict": true,
-    "noEmit": true
+    "strict": true
+    // "noEmit": true
   },
   "include": ["vite.config.ts"]
 }
