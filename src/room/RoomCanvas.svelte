@@ -10,11 +10,14 @@
 
   let roomName = 'debug';
 
+  $: if (roomName.length === 0) {
+    errorMessage = 'Please enter room name';
+  }
+
   function join(
     event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }
   ) {
     if (roomName.length === 0) {
-      errorMessage = 'Please enter room name';
       return;
     }
     errorMessage = '';
@@ -53,17 +56,17 @@
       >Join</button
     >
   </div>
-  <p>{errorMessage}</p>
+  <p role="alert" class="text-red-500">{errorMessage}</p>
 
   <div
     class="flex flex-col justify-center items-center gap-4 py-8"
     class:hidden={!joined}
   >
-    <ul>
+    <ol>
       {#each players as player}
-        <li>{player.name}</li>
+        <oi class="text-xl">{player.name}</oi>
       {/each}
-    </ul>
+    </ol>
     <div class="flex flex-col gap-4">
       <button class="button-primary" on:click={leave}>Leave</button>
       <button class="button-primary" on:click={start}>Play</button>
