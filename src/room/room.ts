@@ -6,7 +6,6 @@ import { Game } from '../game/game';
 import { engine, getTargetDocument } from '../main';
 import RoomCanvas from './RoomCanvas.svelte';
 import { loadModel } from '../loader';
-import type { PlayerData } from '../interface';
 
 export class Room implements EngineContext {
   scene: THREE.Scene;
@@ -14,7 +13,6 @@ export class Room implements EngineContext {
   animationMixers: Map<THREE.Object3D, THREE.AnimationMixer> = new Map();
 
   private component: RoomCanvas | null = null;
-  private players: Map<string, PlayerData> = new Map();
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -35,25 +33,6 @@ export class Room implements EngineContext {
     const game = new Game(); // create instance here to load and listen socket events
 
     socket.addHandler({
-      onPlayers: (players: Record<string, PlayerData>) => {
-        this.component!.joined = true;
-        this.players = new Map(Object.entries(players));
-        this.updateComponentPlayers();
-      },
-      onJoinedPlayer: (id, player) => {
-        this.players.set(id, player);
-        this.updateComponentPlayers();
-      },
-      onLeftPlayer: (id) => {
-        this.players.delete(id);
-        this.updateComponentPlayers();
-      },
-      onErrorTooManyPlayers: () => {
-        this.component!.errorMessage = 'There are too many players';
-      },
-      onErrorRoomIsPlaying: () => {
-        this.component!.errorMessage = 'This room is playing';
-      },
       onField: (_) => {
         // To handle start. the data will be handled in Game
         engine.push(game);
@@ -61,9 +40,6 @@ export class Room implements EngineContext {
     });
 
     this.initialize();
-  }
-  updateComponentPlayers() {
-    this.component!.players = Array.from(this.players.values());
   }
 
   async initialize() {

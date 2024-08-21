@@ -1,18 +1,46 @@
 <script lang="ts">
   import { getSocket } from '../socket';
   import type { PlayerData } from '../interface';
+  import { onDestroy, onMount } from 'svelte';
+  import type { GameEventHandler } from '../event';
 
-  export let errorMessage = '';
   export let visible = true;
-  export let joined = false;
 
-  export let players: PlayerData[] = [];
-
+  let errorMessage = '';
+  let joined = false;
+  let players: PlayerData[] = [];
   let roomName = 'debug';
 
   $: if (roomName.length === 0) {
     errorMessage = 'Please enter room name';
   }
+
+  const handler: GameEventHandler = {
+    onPlayers: (newPlayers: PlayerData[]) => {
+      players = newPlayers;
+      joined = true;
+    },
+    onJoinedPlayer: (player: PlayerData) => {
+      players = [...players, player];
+    },
+    onLeftPlayer: (id: string) => {
+      players = players.filter((p) => p.id !== id);
+    },
+    onErrorRoomIsPlaying() {
+      errorMessage = 'Room is playing';
+    },
+    onErrorRoomIsFull() {
+      errorMessage = 'Room is full';
+    },
+  };
+
+  onMount(() => {
+    getSocket().addHandler(handler);
+  });
+
+  onDestroy(() => {
+    getSocket().removeHandler(handler);
+  });
 
   function join(
     event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }
@@ -62,11 +90,9 @@
     class="flex flex-col justify-center items-center gap-4 py-8"
     class:hidden={!joined}
   >
-    <ol>
-      {#each players as player}
-        <oi class="text-xl">{player.name}</oi>
-      {/each}
-    </ol>
+    {#each players as player}
+      <p class="text-xl">{player.name}</p>
+    {/each}
     <div class="flex flex-col gap-4">
       <button class="button-primary" on:click={leave}>Leave</button>
       <button class="button-primary" on:click={start}>Play</button>

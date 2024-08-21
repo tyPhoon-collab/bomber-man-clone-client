@@ -3,12 +3,12 @@ import type { Bomb, Field, FieldDiff, Index, PlayerData } from './interface';
 import type { Vector3Like } from 'three';
 import type { PlayerState } from './game/player';
 
-interface GameEventHandler {
-  onPlayers?: (players: Record<string, PlayerData>) => void;
-  onJoinedPlayer?: (id: string, player: PlayerData) => void;
+export interface GameEventHandler {
+  onPlayers?: (players: PlayerData[]) => void;
+  onJoinedPlayer?: (player: PlayerData) => void;
   onLeftPlayer?: (id: string) => void;
 
-  onErrorTooManyPlayers?: () => void;
+  onErrorRoomIsFull?: () => void;
   onErrorRoomIsPlaying?: () => void;
 
   onField?: (data: Field) => void;
@@ -20,8 +20,10 @@ interface GameEventHandler {
   onPlayerState?: (id: string, state: PlayerState) => void;
   onSpeedUp?: () => void;
   onGotItem?: (index: Index) => void;
+
   onFinish?: (winnerId: string) => void;
   onFinishSolo?: () => void;
+  onFinishDraw?: () => void;
 }
 
 export class GameSocket {
@@ -40,16 +42,18 @@ export class GameSocket {
       console.log(reason, details);
     });
 
-    this.socket.on('joined_player', (id, player) => {
-      this.handlers.forEach((h) => h.onJoinedPlayer?.(id, player));
+    this.socket.on('joined_player', (player) => {
+      this.handlers.forEach((h) =>
+        h.onJoinedPlayer?.(Object.assign({}, player))
+      );
     });
 
     this.socket.on('left_player', (id) => {
       this.handlers.forEach((h) => h.onLeftPlayer?.(id));
     });
 
-    this.socket.on('players', (players) => {
-      this.handlers.forEach((h) => h.onPlayers?.(players));
+    this.socket.on('players', (players: PlayerData[]) => {
+      this.handlers.forEach((h) => h.onPlayers?.(Object.assign([], players)));
     });
 
     this.socket.on('field', (data) => {
@@ -96,8 +100,12 @@ export class GameSocket {
       this.handlers.forEach((h) => h.onFinishSolo?.());
     });
 
-    this.socket.on('error_too_many_players', () => {
-      this.handlers.forEach((h) => h.onErrorTooManyPlayers?.());
+    this.socket.on('finish_draw', () => {
+      this.handlers.forEach((h) => h.onFinishDraw?.());
+    });
+
+    this.socket.on('error_room_is_full', () => {
+      this.handlers.forEach((h) => h.onErrorRoomIsFull?.());
     });
 
     this.socket.on('error_room_is_playing', () => {

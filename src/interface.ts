@@ -41,7 +41,7 @@ export interface FieldDiff {
 }
 
 export interface PlayerData {
-  index: number;
+  id: string;
   name: string;
 }
 

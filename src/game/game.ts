@@ -32,7 +32,7 @@ export class Game implements EngineContext {
 
   private player: ControllablePlayer | null = null;
   private players: Map<string, RemotePlayer> = new Map();
-  private playerData: Map<string, PlayerData> = new Map();
+  private playerData: PlayerData[] = [];
 
   private socket: GameSocket;
   private inputManager: InputManager;
@@ -55,14 +55,15 @@ export class Game implements EngineContext {
     this.socket = getSocket();
 
     this.socket.addHandler({
-      onPlayers: (players: Record<string, PlayerData>) => {
-        this.playerData = new Map(Object.entries(players));
+      onPlayers: (players: PlayerData[]) => {
+        this.playerData = players;
       },
-      onJoinedPlayer: (id, player) => {
-        this.playerData.set(id, player);
+      onJoinedPlayer: (player) => {
+        this.playerData.push(player);
       },
       onLeftPlayer: (id) => {
-        this.playerData.delete(id);
+        this.playerData = this.playerData.filter((p) => p.id !== id);
+
         const player = this.players.get(id);
         if (player) {
           player.dispose();
@@ -75,13 +76,14 @@ export class Game implements EngineContext {
         this.fieldController.build();
         this.camera.position.set((field.config.width * UNIT) / 2, 5000, 100);
 
-        for (const [id, data] of this.playerData.entries()) {
-          const initIndex = field.config.initialSpawnIndexes[data.index];
-          if (id === getSocket().id) {
+        for (const data of this.playerData) {
+          const index = this.playerData.findIndex((p) => p.id === data.id);
+          const initIndex = field.config.initialSpawnIndexes[index];
+          if (data.id === getSocket().id) {
             this.player = await this.buildControllablePlayer(initIndex);
           } else {
             const player = await this.buildPlayer(initIndex);
-            this.players.set(id, player);
+            this.players.set(data.id, player);
           }
         }
 
@@ -121,6 +123,10 @@ export class Game implements EngineContext {
         this.component!.finished = true;
       },
       onFinishSolo: () => {
+        this.soundController.stopBGM();
+        this.component!.finished = true;
+      },
+      onFinishDraw: () => {
         this.soundController.stopBGM();
         this.component!.finished = true;
       },
