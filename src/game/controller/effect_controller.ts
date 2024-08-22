@@ -4,6 +4,7 @@ import { convertIndexToPosition } from '../convert';
 import * as THREE from 'three';
 import { engine } from '../../main';
 import type { Index } from '../../interface';
+import { FPS } from '../../engine';
 
 const enum Effect {
   Explosion,
@@ -59,7 +60,7 @@ export class EffectController {
   }
 
   update(delta: number) {
-    this.context.update(delta * 60);
+    this.context.update(delta * FPS);
 
     const camera = this.game.camera;
     this.context.setProjectionMatrix(

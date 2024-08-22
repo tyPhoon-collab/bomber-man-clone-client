@@ -10,6 +10,8 @@ export interface EngineContext {
   update: (delta: number) => void;
 }
 
+export const FPS = 60;
+
 export class Engine {
   renderer: THREE.WebGLRenderer;
   private contexts: EngineContext[] = [];

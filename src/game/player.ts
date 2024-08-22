@@ -8,6 +8,7 @@ import { BombState, equalIndex, type Index } from '../interface';
 import type { GameSocket } from '../event';
 import { getSocket } from '../socket';
 import { Sound } from './controller/sound_controller';
+import { FPS } from '../engine';
 
 export type PlayerState =
   | 'Idle'
@@ -69,7 +70,7 @@ export class Player {
       const angle = this.object.rotation.y;
       const dir = new THREE.Vector3(Math.sin(angle), 3, Math.cos(angle));
 
-      this.pos.add(dir.normalize().multiplyScalar(40));
+      this.pos.add(dir.normalize().multiplyScalar(40 * delta * FPS));
 
       this.game.effectController.playDead(this.pos);
     }
